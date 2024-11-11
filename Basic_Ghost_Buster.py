@@ -3,7 +3,7 @@ from tkinter import Tk, Button, Label, IntVar, BooleanVar, StringVar, Frame
 
 # Define grid size and game settings
 GRID_SIZE = (8, 13)
-INITIAL_CREDIT = 50
+INITIAL_CREDIT = 20
 INITIAL_BUSTS = 2
 
 # Initialize root window first
@@ -119,7 +119,7 @@ def update_grid_display():
             else:
                 grid[x][y].config(text="")
 
-    credit_label.config(text=f"Credit: {credit.get()}")
+    credit_label.config(text=f"Score: {credit.get()}")
     bust_label.config(text=f"Bust Attempts Left: {bust_attempts.get()}")
     if credit.get() == 0 and bust_attempts.get() == 0:
         result_label.set("Game Over! No credit or bust attempts left.")
@@ -166,7 +166,7 @@ def init_game():
     control_panel = Frame(root, bg="black")
     control_panel.grid(row=0, column=1, padx=20, pady=20, sticky="n")
 
-    credit_label = Label(control_panel, text=f"Credit: {credit.get()}", bg="black", fg="white", font=("Arial", 14))
+    credit_label = Label(control_panel, text=f"Score : {credit.get()}", bg="black", fg="white", font=("Arial", 14))
     credit_label.pack(anchor="w", pady=5)
 
     bust_label = Label(control_panel, text=f"Bust Attempts Left: {bust_attempts.get()}", bg="black", fg="white",
