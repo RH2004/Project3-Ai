@@ -81,13 +81,13 @@ class GhostBusterGame:
     def conditional_color_probability(self, color, distance):
         """Return the probability of a color given the distance."""
         if distance == 0:
-            return 1.0 if color == 'Red' else 0.0
+            return 0.99 if color == 'Red' else 0.01
         elif distance <= 2:
             return 0.8 if color == 'Orange' else 0.2
         elif distance <= 4:
             return 0.7 if color == 'Yellow' else 0.3
         else:
-            return 1.0 if color == 'Green' else 0.0
+            return 0.99 if color == 'Green' else 0.01
 
     def on_click(self, x, y):
         """Handle a player's click on a cell to sense or bust the ghost location."""
