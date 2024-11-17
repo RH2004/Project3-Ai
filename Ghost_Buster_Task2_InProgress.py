@@ -39,43 +39,48 @@ class GhostBusterGame:
                 self.posterior_probs[(x, y)] = prior_prob
 
     def distance_sense(self, xclk, yclk):
-        """Return a color based on the distance from the ghost."""
-        distance = abs(xclk - self.ghost_x) + abs(yclk - self.ghost_y)
-        if distance == 0:
-            return 'Red'
-        elif distance <= 2:
-            return 'Orange'
-        elif distance <= 4:
-            return 'Yellow'
-        else:
-            return 'Green'
+        """Calculate the distance from the current position to the ghost and return a color."""
+        # Calculate distances in respect to x and y axis
+        dx = self.ghost_x - xclk
+        dy = self.ghost_y - yclk
+        distance = abs(dx) + abs(dy)
 
-    def direction_sense(self, xclk, yclk):
-        """Returns the cardinal direction from the player to the ghost."""
-        angle = math.atan2(self.ghost_y - yclk, self.ghost_x - xclk)
+        # Now, calculate the direction based on the x and y distances (angle computation)
+        angle = math.atan2(dy, dx)
         angle_deg = math.degrees(angle) % 360
+
+        # Determine the cardinal direction based on angle
         if angle_deg >= 337.5 or angle_deg < 22.5:
-            return '→'
+            direction = '→'
         elif 22.5 <= angle_deg < 67.5:
-            return '↗'
+            direction = '↗'
         elif 67.5 <= angle_deg < 112.5:
-            return '↑'
+            direction = '↑'
         elif 112.5 <= angle_deg < 157.5:
-            return '↖'
+            direction = '↖'
         elif 157.5 <= angle_deg < 202.5:
-            return '←'
+            direction = '←'
         elif 202.5 <= angle_deg < 247.5:
-            return '↙'
+            direction = '↙'
         elif 247.5 <= angle_deg < 292.5:
-            return '↓'
+            direction = '↓'
         else:
-            return '↘'
+            direction = '↘'
+
+        # Return a color based on the distance and the calculated direction
+        if distance == 0:
+            return 'Red', direction
+        elif distance <= 2:
+            return 'Orange', direction
+        elif distance <= 4:
+            return 'Yellow', direction
+        else:
+            return 'Green', direction
 
     def update_posterior_probabilities(self, color, direction, xclk, yclk):
         """Update the posterior probabilities based on sensor readings."""
         for loc, prob in self.posterior_probs.items():
             dist = abs(loc[0] - xclk) + abs(loc[1] - yclk)
-            dir = self.direction_sense(xclk, yclk)
 
             color_prob = self.conditional_color_probability(color, dist)
             direction_prob = self.conditional_direction_probability(direction, loc, xclk, yclk)
@@ -87,7 +92,7 @@ class GhostBusterGame:
 
     def conditional_direction_probability(self, direction, loc, xclk, yclk):
         """Return the probability of a direction given the agent's position."""
-        correct_direction = self.direction_sense(xclk, yclk)
+        _, correct_direction = self.distance_sense(xclk, yclk)
         return 0.9 if direction == correct_direction else 0.1
 
     def conditional_color_probability(self, color, distance):
@@ -111,8 +116,7 @@ class GhostBusterGame:
         if self.bust_mode.get() and self.bust_attempts.get() > 0:
             self.bust_attempt(x, y)
         elif self.credit.get() > 0:
-            color = self.distance_sense(x, y)
-            direction = self.direction_sense(x, y)
+            color, direction = self.distance_sense(x, y)
             self.update_posterior_probabilities(color, direction, x, y)
             self.credit.set(self.credit.get() - 1)
             self.view_probabilities.set(False)
@@ -121,15 +125,27 @@ class GhostBusterGame:
             self.update_grid_display()
 
     def bust_attempt(self, x, y):
-        """Handle a bust attempt on a cell."""
+        """Handle a bust attempt on a specific cell."""
         if self.bust_attempts.get() > 0:
-            if (x, y) == (self.ghost_x, self.ghost_y):
+            # Calculate the distance between the clicked cell and the ghost
+            distance = abs(self.ghost_x - x) + abs(self.ghost_y - y)
+
+            if distance == 0:
+                # If distance is zero, the player found the ghost
                 self.result_label.set("Congratulations! You found the ghost!")
-                self.bust_attempts.set(0)
+                self.bust_attempts.set(0)  # End the game after a successful bust
             else:
+                # If the distance is not zero, the player missed
                 self.bust_attempts.set(self.bust_attempts.get() - 1)
-                self.result_label.set("You missed! Try again." if self.bust_attempts.get() > 0 else "Game Over!")
+                self.result_label.set(
+                    "You missed! Try again." if self.bust_attempts.get() > 0
+                    else "Game Over! No bust attempts left."
+                )
+
+            # Update the grid display after a bust attempt
             self.update_grid_display()
+
+        # Set bust mode to false once a bust attempt is made
         self.bust_mode.set(False)
 
     def update_grid_display(self):
@@ -140,10 +156,12 @@ class GhostBusterGame:
                     prob_text = f" {self.posterior_probs[(x, y)]:.2f}"
                     self.grid[x][y].config(text=prob_text)
                 elif self.view_directions.get():
-                    direction = self.direction_sense(x, y)
+                    # Use distance_sense to get both the color and direction
+                    _, direction = self.distance_sense(x, y)
                     self.grid[x][y].config(text=direction)
                 else:
                     self.grid[x][y].config(text="")
+
         self.credit_label.config(text=f"Score: {self.credit.get()}")
         self.bust_label.config(text=f"Bust Attempts Left: {self.bust_attempts.get()}")
 
@@ -201,18 +219,17 @@ class GhostBusterGame:
 
         view_prob_btn = Button(control_panel, text="View Probabilities", command=self.toggle_probabilities,
                                bg="grey", fg="black", font=("Arial", 12))
-        view_prob_btn.pack(anchor="w", pady=5)
+        view_prob_btn.pack(anchor="w", pady=10)
 
         view_dir_btn = Button(control_panel, text="View Direction", command=self.toggle_directions,
                               bg="grey", fg="black", font=("Arial", 12))
-        view_dir_btn.pack(anchor="w", pady=5)
+        view_dir_btn.pack(anchor="w", pady=10)
 
         bust_mode_btn = Button(control_panel, text=" Bust Mode", command=self.toggle_bust_mode,
                                bg="red", fg="white", font=("Arial", 12))
-        bust_mode_btn.pack(anchor="w", pady=5)
+        bust_mode_btn.pack(anchor="w", pady=10)
 
 if __name__ == "__main__":
     root = Tk()
     game = GhostBusterGame(root)
     root.mainloop()
-
